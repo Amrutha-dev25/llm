@@ -737,3 +737,44 @@ def test_gpt4o_mini_sync_and_async(
     store = LogStore(db)
     chain = store.load_chain(turn["tip_message_hash"])
     assert chain[-1].parts[0].text == "Ho ho ho"
+
+
+@pytest.mark.parametrize("async_", (False, True))
+def test_gpt4o_mini_no_usage_sync_and_async(
+    db_factory, monkeypatch, tmpdir, httpx2_mock, async_
+):
+    user_path = tmpdir / "user_dir"
+    monkeypatch.setenv("LLM_USER_PATH", str(user_path))
+
+    httpx2_mock.add_response(
+        method="POST",
+        url="https://api.openai.com/v1/chat/completions",
+        json={
+            "id": "chatcmpl-test-no-usage",
+            "object": "chat.completion",
+            "created": 1730871958,
+            "model": "gpt-4o-mini",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "Hello without usage",
+                        "refusal": None,
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "system_fingerprint": "fp_test",
+        },
+        headers={"Content-Type": "application/json"},
+    )
+
+    args = ["-m", "gpt-4o-mini", "--key", "x", "--no-stream"]
+    if async_:
+        args.append("--async")
+
+    result = CliRunner().invoke(cli, args, catch_exceptions=False)
+
+    assert result.exit_code == 0
+    assert result.stdout == "Hello without usage\n"

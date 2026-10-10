@@ -1487,7 +1487,7 @@ class Chat(_Shared, KeyModel):
                 stream=False,
                 **kwargs,
             )
-            usage = completion.usage.model_dump()
+            usage = completion.usage.model_dump() if completion.usage else None
             response.response_json = remove_dict_none_values(completion.model_dump())
             for tool_call in completion.choices[0].message.tool_calls or []:
                 response.add_tool_call(
@@ -1604,7 +1604,7 @@ class AsyncChat(_Shared, AsyncKeyModel):
                 **kwargs,
             )
             response.response_json = remove_dict_none_values(completion.model_dump())
-            usage = completion.usage.model_dump()
+            usage = completion.usage.model_dump() if completion.usage else None
             for tool_call in completion.choices[0].message.tool_calls or []:
                 response.add_tool_call(
                     llm.ToolCall(
